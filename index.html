@@ -1,0 +1,167 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+  <style>
+    .player {
+      width: 40px;
+      height: 40px;
+      background: #000;
+      position: absolute;
+      border-radius: 50%;
+    }   
+    .player::after {
+      transform-origin: top bottom;
+
+      content: "";
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%) rotate(360deg);
+      background: #000;
+      width: 50px;
+      height: 15px;
+      display: block;
+      color: red;
+      border-radius: 8px;
+      left: 30%;
+    }
+    #app {
+      width: 100vw;
+      height: 100vh;
+    }
+    * {
+      margin: 0;
+      padding: 0;
+    }
+  </style>
+  <title>Agora vai!!!!</title>
+</head>
+<body>
+  <div class="pane" id="app" tabindex="0"
+    v-on:keydown.d="keydown('right')"
+    v-on:keydown.a="keydown('left')"
+    v-on:keydown.w="keydown('up')"
+    v-on:keydown.s="keydown('down')"
+    v-on:keyup.d="keyup('right')"
+    v-on:keyup.a="keyup('left')"
+    v-on:keyup.w="keyup('up')"
+    v-on:keyup.s="keyup('down')"
+    >
+    <player v-for="player in players" v-bind:key="player.id" v-bind:id="player.id" v-bind:style="{'background-color': `hsl(${player.color}, 100%, 50%)`, top: player.y + 'px', left: player.x + 'px', transform: `rotate(${player.ang}deg)`}"></player>
+  </div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.js"></script>
+  <script>
+    
+    var socket = io.connect('http://localhost:8000');
+    console.log(socket)
+    var players = []
+
+    socket.on('players', (data) => {
+     // console.log(data)
+      while (players.length) players.pop()
+      Object.keys(data).map(id => {
+        console.log(data[id])
+        var player = {
+          id: id,
+          ang: data[id].ang,
+          color: data[id].color,
+          x: data[id].x,
+          y: data[id].y,
+          // mousePosition: mousePosition
+        }
+        players.push(player)
+      })
+    })
+
+    // socket.on("position", data => {
+    //   const player = document.querySelector(`[data-id=${data.playerId}]`);
+    //   console.log(data);
+    //   player.style.top = `${data.y}px`
+    //   player.style.left = `${data.x}px`
+    //   console.log("daasdsad")
+    // })
+
+
+    const Player = {
+      name: "Player",
+      template: `
+        <div 
+          tabindex="0" 
+          class="player"
+          v-bind:data-id="id"
+
+        ></div>`,
+      props: ['id'],
+      created () {
+      },
+      methods: {
+        
+      },
+      mounted () {
+  
+      },
+    }
+
+    const vm = new Vue({
+      el: "#app",
+      data: {
+        myId: 0,
+        players: players,
+        x: 0,
+        y: 0,
+        mouseX: 0,
+        mouseY: 0
+      },
+      mounted: function() {
+        console.log(players);
+        addEventListener("mousemove", e => {
+          // console.log(e.x, e.y)
+          socket.emit("mouseMove", { mouseX: e.clientX, mouseY: e.clientY })
+        });
+
+        var bullet = [];
+        addEventListener("click", event => {
+          socket.emit("mouseClick", {mouseX: event.clientX, mouseY: event.clientY})
+        })
+        setInterval(() => {
+          // this.calcMove() // calcula movimento x, y baseado nas teclas pressionadas
+          //this.keydown(x, y)
+        }, 20)
+
+
+                
+      },
+      methods: {
+        keydown(direction) {
+          
+          // console.log(player)
+          socket.emit("down", direction);
+          socket.on("felinto", data => {
+            console.log(data)
+          })
+          
+        },
+        keyup(direction) {
+          
+          // console.log(player)
+          socket.emit("up", direction);
+          socket.on("felinto", data => {
+            console.log(data)
+          })
+          
+        }
+      },
+      components: {
+        Player
+      }
+    })
+
+  
+  </script>
+</body>
+</html>
